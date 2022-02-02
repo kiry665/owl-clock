@@ -89,6 +89,18 @@ void temp(){
 }
 
 void OTAS(){
+  int l = map(analogRead(0), 0, 1000, 0, 7);
+  
+  disp1.clear();
+  disp1.brightness(l);
+  disp1.displayByte(1, 0x7c);
+  disp1.displayByte(0, 0x5c);
+  
+  disp2.clear();
+  disp2.brightness(l);
+  disp2.displayByte(1, 0x5c);
+  disp2.displayByte(0, 0x78);
+  
   WiFi.mode(WIFI_STA);
   WiFi.begin("ard", "nke321nke");
   while (WiFi.waitForConnectResult() != WL_CONNECTED) {
