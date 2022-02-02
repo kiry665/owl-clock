@@ -9,9 +9,10 @@ GyverTM1637 disp2(12,14); // D5, D6
 GTimer myTimer(MS);
 
 byte number[10] {_0, _1, _2, _3, _4, _5, _6, _7, _8, _9}; // 0 – 9
-void disp();
+bool flag = false;
 
 void setup() {
+  pinMode(13, INPUT_PULLUP);
   myTimer.setInterval(30000); myTimer.stop();
   WiFi.mode(WIFI_OFF); delay(500);
   sync();
@@ -20,6 +21,15 @@ void setup() {
 void loop(){
   if (myTimer.isReady()){
     disp();
+  }
+  bool btn = !digitalRead(13);
+  if (btn && !flag){
+    flag = true;
+    myTimer.stop();
+    temp();
+  }
+  if (!btn && flag){
+    flag = false;
   }
 }
 
@@ -49,4 +59,22 @@ void sync(){
   }
   disp();
   myTimer.start();
+}
+
+void temp(){
+  int t = rtc.getTemperature();
+  int l = map(analogRead(0), 0, 1000, 0, 7);
+
+  disp1.clear();
+  disp1.brightness(l);
+  disp1.displayByte(1, number[t / 10]);
+  disp1.displayByte(0, number[t % 10]);
+  
+  disp2.clear();
+  disp2.brightness(l);
+  disp2.displayByte(1, 0x63);
+  disp2.displayByte(0, 0x39);
+
+  delay(10000);
+  sync();
 }
