@@ -2,6 +2,9 @@
 #include <microDS3231.h>
 #include "GyverTM1637.h"
 #include "GyverTimer.h"
+#include <ESP8266mDNS.h>
+#include <WiFiUdp.h>
+#include <ArduinoOTA.h>
 
 MicroDS3231 rtc;
 GyverTM1637 disp1(2,0); //clk, dio D3, D4
@@ -9,28 +12,34 @@ GyverTM1637 disp2(12,14); // D5, D6
 GTimer myTimer(MS);
 
 byte number[10] {_0, _1, _2, _3, _4, _5, _6, _7, _8, _9}; // 0 – 9
-bool flag = false;
+bool flag = false; bool work = true;
 
 void setup() {
-  pinMode(13, INPUT_PULLUP);
   myTimer.setInterval(30000); myTimer.stop();
-  WiFi.mode(WIFI_OFF); delay(500);
-  sync();
+  pinMode(13, INPUT_PULLUP);
+  bool btn = !digitalRead(13);
+  if (btn) work = false;
+  if (work) {
+    WiFi.mode(WIFI_OFF); delay(500);
+    sync();
+  }else OTAS();
 }
 
 void loop(){
-  if (myTimer.isReady()){
-    disp();
-  }
-  bool btn = !digitalRead(13);
-  if (btn && !flag){
-    flag = true;
-    myTimer.stop();
-    temp();
-  }
-  if (!btn && flag){
-    flag = false;
-  }
+  if (work){
+    if (myTimer.isReady()){
+      disp();
+    }
+    bool btn = !digitalRead(13);
+    if (btn && !flag){
+      flag = true;
+      myTimer.stop();
+      temp();
+    }
+    if (!btn && flag){
+      flag = false;
+    }
+  }else OTAL();
 }
 
 void disp(){
@@ -77,4 +86,30 @@ void temp(){
 
   delay(10000);
   sync();
+}
+
+void OTAS(){
+  WiFi.mode(WIFI_STA);
+  WiFi.begin("ard", "nke321nke");
+  while (WiFi.waitForConnectResult() != WL_CONNECTED) {
+    delay(5000);
+    ESP.restart();
+  }
+  
+  ArduinoOTA.setPort(53);
+
+  ArduinoOTA.onStart([]() {
+    String type;
+    if (ArduinoOTA.getCommand() == U_FLASH) {
+      type = "sketch";
+    } else { // U_FS
+      type = "filesystem";
+    }
+  });
+
+  ArduinoOTA.begin();
+}
+
+void OTAL(){
+  ArduinoOTA.handle();
 }
